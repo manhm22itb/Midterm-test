@@ -1,4 +1,4 @@
-# Midterm-test
+
 # Ứng dụng Đếm ngược Sinh nhật
 
 ## Cách chạy ứng dụng:
