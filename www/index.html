@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/@capacitor/core@latest/dist/capacitor.js"></script>
+    <script src="https://unpkg.com/@capacitor/local-notifications@latest"></script>
+    <script src="https://unpkg.com/@capacitor/share@latest"></script>
+    <script src="https://unpkg.com/@capacitor/battery@latest"></script>
+    <title>Đếm Ngược Sinh Nhật</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            background: linear-gradient(to right, #74ebd5, #acb6e5);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        input {
+            width: 80%;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            outline: none;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        input:focus {
+            border-color: #0056b3;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background: #007bff;
+            color: white;
+            transition: background 0.3s ease, transform 0.1s ease;
+        }
+        button:hover {
+            background: #0056b3;
+            transform: scale(1.05);
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        #result, #battery-status {
+            margin-top: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>🎂 Đếm ngược sinh nhật 🎉</h2>
+        <input type="text" id="birthday" placeholder="Nhập ngày sinh (dd/mm)">
+        <button onclick="calculateDays()">Tính số ngày</button>
+        <button onclick="shareResult()">Chia sẻ kết quả</button>
+        <button onclick="getBatteryStatus()">Kiểm tra pin</button>
+        <p id="result"></p>
+        <p id="battery-status"></p>
+    </div>
+
+    <script>
+        async function calculateDays() {
+            let input = document.getElementById("birthday").value;
+            let parts = input.split("/");
+
+            if (parts.length !== 2) {
+                document.getElementById("result").innerText = "Vui lòng nhập đúng định dạng dd/mm!";
+                return;
+            }
+
+            let day = parseInt(parts[0], 10);
+            let month = parseInt(parts[1], 10);
+            let today = new Date();
+            let currentYear = today.getFullYear();
+            
+            let birthday = new Date(currentYear, month - 1, day);
+            
+            if (birthday < today) {
+                birthday.setFullYear(currentYear + 1);
+            }
+
+            let diff = Math.ceil((birthday - today) / (1000 * 60 * 60 * 24));
+
+            document.getElementById("result").innerText = `🎉 Còn ${diff} ngày nữa đến sinh nhật của bạn!`;
+
+            await Capacitor.Plugins.LocalNotifications.schedule({
+                notifications: [
+                    {
+                        id: 1,
+                        title: "Thông báo sinh nhật",
+                        body: `Còn ${diff} ngày nữa đến sinh nhật của bạn!`,
+                    },
+                ],
+            });
+        }
+
+        async function shareResult() {
+            const resultText = document.getElementById("result").innerText;
+            if (!resultText) {
+                alert("Hãy tính số ngày tới sinh nhật trước!");
+                return;
+            }
+
+            try {
+                const shareOptions = {
+                    title: "Chia sẻ kết quả",
+                    text: resultText,
+                    dialogTitle: "Chia sẻ kết quả",
+                };
+
+                if (Capacitor.getPlatform() !== "web") {
+                    shareOptions.url = "https://example.com";
+                }
+
+                await Capacitor.Plugins.Share.share(shareOptions);
+            } catch (error) {
+                console.error("Lỗi chia sẻ:", error);
+                alert("Không thể chia sẻ kết quả!");
+            }
+        }
+
+        async function getBatteryStatus() {
+            if (!navigator.getBattery) {
+                document.getElementById("battery-status").innerText = "Trình duyệt không hỗ trợ Battery API.";
+                return;
+            }
+
+            const battery = await navigator.getBattery();
+
+            function updateBatteryInfo() {
+                let status = `Pin: ${(battery.level * 100).toFixed(0)}% - ${battery.charging ? "Đang sạc" : "Không sạc"}`;
+                document.getElementById("battery-status").innerText = status;
+            }
+
+            updateBatteryInfo(); // Cập nhật lần đầu
+
+            battery.addEventListener("chargingchange", updateBatteryInfo);
+            battery.addEventListener("levelchange", updateBatteryInfo);
+        }
+    </script>
+
+</body>
+</html>
