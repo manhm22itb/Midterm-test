@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/@capacitor/core@latest/dist/capacitor.js"></script>
+    <script src="https://unpkg.com/@capacitor/local-notifications@latest"></script>
+    <script src="https://unpkg.com/@capacitor/share@latest"></script>
+    <title>Đếm Ngược Sinh Nhật</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+            background-color: white;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            display: inline-block;
+        }
+        input {
+            padding: 8px;
+            width: 150px;
+            font-size: 16px;
+            margin: 10px;
+        }
+        button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Đếm ngược sinh nhật</h2>
+        <input type="text" id="birthday" placeholder="Nhập ngày sinh (dd/mm)">
+        <div>
+            <button onclick="calculateDays()">Tính số ngày</button>
+            <button onclick="shareResult()">Chia sẻ kết quả</button>
+        </div>
+        <p id="result"></p>
+    </div>
+
+    <script>
+        async function calculateDays() {
+            let input = document.getElementById("birthday").value;
+            let parts = input.split("/");
+
+            if (parts.length !== 2) {
+                document.getElementById("result").innerText = "Vui lòng nhập đúng định dạng dd/mm!";
+                return;
+            }
+
+            let day = parseInt(parts[0], 10);
+            let month = parseInt(parts[1], 10);
+            let today = new Date();
+            let currentYear = today.getFullYear();
+            
+            let birthday = new Date(currentYear, month - 1, day);
+            
+            if (birthday < today) {
+                birthday.setFullYear(currentYear + 1);
+            }
+
+            let diff = Math.ceil((birthday - today) / (1000 * 60 * 60 * 24));
+
+            document.getElementById("result").innerText = `Còn ${diff} ngày nữa đến sinh nhật của bạn!`;
+
+            await Capacitor.Plugins.LocalNotifications.schedule({
+                notifications: [
+                    {
+                        id: 1,
+                        title: "Kết quả",
+                        body: `Còn ${diff} ngày nữa đến sinh nhật của bạn!`,
+                    },
+                ],
+            });
+        }
+
+        async function shareResult() {
+          const resultText = document.getElementById("result").innerText;
+          if (!resultText) {
+            alert("Hãy tính số ngày tới sinh nhật trước!");
+            return;
+          }
+
+          try {
+            const shareOptions = {
+              title: "Kết quả",
+              text: resultText,
+              dialogTitle: "Chia sẻ kết quả",
+            };
+
+            if (Capacitor.getPlatform() !== "web") {
+              shareOptions.url = "https://example.com";
+            }
+
+            await Capacitor.Plugins.Share.share(shareOptions);
+          } catch (error) {
+            console.error("Lỗi chia sẻ:", error);
+            alert("Không thể chia sẻ kết quả!");
+          }
+        }
+    </script>
+
+</body>
+</html>

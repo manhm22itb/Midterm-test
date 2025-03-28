@@ -1,0 +1,10 @@
+{
+  "appId": "com.exampp.birthdayApp",
+  "appName": "birthday",
+  "webDir": "www",
+  "plugins": {
+    "LocalNotifications": {
+      "iconColor": "#488AFF"
+    }
+  }
+}
